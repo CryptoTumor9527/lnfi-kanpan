@@ -64,3 +64,15 @@ a.addr{color:var(--blue);text-decoration:none}
 .loading{color:var(--mut);padding:20px;text-align:center}
 @media (max-width:820px){.grid2{grid-template-columns:1fr}.chartbox{height:280px}main{padding:10px}.top{padding:8px 10px}.brand .sub{display:none}
 .hide-m{display:none}#mt td:first-child,#mt th:first-child{position:sticky;left:0;background:var(--bg2);z-index:1}.cards{grid-template-columns:1fr 1fr;gap:8px}.card{padding:9px}.card .px{font-size:16px}.card .sm{font-size:11px}.card canvas{height:28px}.dprice{margin-left:0;text-align:left;width:100%}}
+
+/* 持仓面板 */
+.hold{flex-basis:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;max-width:1248px;margin:2px auto 0;width:100%}
+.hc{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:7px 12px;min-width:0}
+.hc .hn{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:12px;color:var(--mut)}.hc .hn b{color:var(--tx);font-size:13px}
+.hc .hn span{font-family:var(--mono);white-space:nowrap}
+.hc .hv{font:700 18px var(--mono);color:var(--acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hc .hv small{font-size:11px;color:var(--mut);font-weight:500}
+.hc .hs{font:12px var(--mono);color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc.hp .hv{color:var(--tx)}
+.hc.ht{border-color:rgba(247,178,59,.55);background:linear-gradient(180deg,rgba(247,178,59,.10),var(--bg2))}
+@media (max-width:640px){.top{padding:8px 10px;gap:6px}.brand .sub{display:none}.hold{grid-template-columns:1fr 1fr;gap:6px}.hc{padding:5px 9px}.hc .hv{font-size:15px}.hc .hs{font-size:11px}}
+@media (max-width:640px){.top{flex-wrap:wrap}.brand{flex:0 0 auto}.meta{flex:1 1 0;min-width:0;flex-wrap:nowrap;justify-content:flex-end}#btc{display:none}#status{min-width:0;max-width:100%;overflow:hidden}#status>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}

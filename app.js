@@ -1,4 +1,12 @@
 'use strict';
+// ===== 持仓配置：改这里即可（名字、数量；token 为市场名） =====
+const HOLDINGS = {
+  token: 'PPRGB',
+  list: [
+    { name: '毒瘤', qty: 50000 },
+    { name: '洪总', qty: 10674 },
+  ],
+};
 // ===== 工具 =====
 const $ = s => document.querySelector(s);
 const TZ = 'Asia/Shanghai';
@@ -116,6 +124,26 @@ async function loadHome() {
     setStatus(lnfiStale ? false : pg.phase === 'done' ? true : null, txt);
     if (!route.name) renderHome();
   } catch (e) { console.error(e); setStatus(false, '出错：' + e.message); }
+}
+
+// ===== 持仓面板（固定在顶部） =====
+function renderHoldings() {
+  const el = $('#hold'); if (!el) return;
+  let mk = null, bu = null;
+  try { const all = LNFI.markets(); bu = all.btcUsd; mk = all.markets.find(m => m.name === HOLDINGS.token); } catch {}
+  const px = mk && mk.last != null ? mk.last : null;
+  const fmtBtc = v => v == null ? '—' : num(v / 1e8, 4) + ' BTC';
+  const fmtUsd = v => v == null || !bu ? '—' : '$' + (v * bu / 1e8).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const fmtSats = v => v == null ? '—' : Math.round(v).toLocaleString('en-US');
+  const cell = (name, qty, cls = '') => { const v = px == null ? null : qty * px; return `<div class="hc ${cls}">
+    <div class="hn"><b>${esc(name)}</b><span>${num(qty, 0)} ${esc(HOLDINGS.token)}</span></div>
+    <div class="hv">${fmtSats(v)} <small>sats</small></div>
+    <div class="hs">${fmtBtc(v)} · ${fmtUsd(v)}</div></div>`; };
+  const tot = HOLDINGS.list.reduce((a, h) => a + h.qty, 0);
+  el.innerHTML = `<div class="hc hp"><div class="hn"><b>${esc(HOLDINGS.token)} 现价</b><span>${mk && mk.backfilled && mk.ch24 != null ? '24h ' + pct(mk.ch24) : ''}</span></div>
+    <div class="hv">${px == null ? '<span class="mut">读取中…</span>' : num(px) + ' <small>sats</small>'}</div>
+    <div class="hs">${mk && mk.lastAt ? '成交于 ' + fDT.format(new Date(mk.lastAt)) : ''}${bu ? ' · BTC $' + num(bu, 0) : ''}</div></div>`
+    + HOLDINGS.list.map(h => cell(h.name, h.qty)).join('') + (HOLDINGS.list.length > 1 ? cell('合计', tot, 'ht') : '');
 }
 
 // ===== 详情页 =====
@@ -253,7 +281,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { lo
 
 // 数据有变化就重画（引擎内部已节流）；另每 15 秒刷新“几分钟前”
 let rT = 0;
-LNFI.onUpdate(() => { const now = Date.now(); if (now - rT < 1000) return; rT = now; loadHome(); loadDetail(); });
-setInterval(() => { if (document.hidden) return; loadHome(); loadDetail(); }, 15e3);
+LNFI.onUpdate(() => { renderHoldings(); const now = Date.now(); if (now - rT < 1000) return; rT = now; loadHome(); loadDetail(); });
+setInterval(() => { if (document.hidden) return; renderHoldings(); loadHome(); loadDetail(); }, 15e3);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadHome(); loadDetail(); } });
-go(); loadHome(); LNFI.start();
+renderHoldings(); go(); loadHome(); LNFI.start();
