@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lnfi 看盘 · RGB / Taproot</title>
+<meta name="theme-color" content="#0b0f14">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0f14'/%3E%3Cpath d='M5 22l6-7 5 4 9-10' stroke='%2322d3a6' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo">▲</span><b>Lnfi 看盘</b><span class="sub">RGB · Taproot Assets P2P 市场</span></div>
+  <div class="meta">
+    <span id="btc" class="pill"></span>
+    <span id="status" class="pill"><i class="dot"></i><span>连接中…</span></span>
+  </div>
+</header>
+
+<main id="home">
+  <section class="cards" id="cards"></section>
+  <section class="panel">
+    <div class="panel-head">
+      <h2>全部市场</h2>
+      <div class="tools">
+        <div class="seg" id="protoFilter"><button data-v="all" class="on">全部</button><button data-v="RGB">RGB</button><button data-v="Taproot">Taproot</button></div>
+        <div class="seg" id="unitSel"><button data-v="sats" class="on">sats</button><button data-v="usd">USD</button></div>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table id="mt">
+        <thead><tr>
+          <th data-k="name" class="l">市场</th>
+          <th data-k="last">最新价</th>
+          <th data-k="ch24">24h</th>
+          <th data-k="ch7">7d</th>
+          <th data-k="ch30">30d</th>
+          <th data-k="v24">24h 成交额 <small>sats</small></th>
+          <th data-k="v7">7d 成交额</th>
+          <th data-k="v30">30d 成交额</th>
+          <th data-k="w30">30d 钱包</th>
+          <th data-k="holders">持有人</th>
+          <th data-k="fdv">隐含 FDV</th>
+          <th class="nos">7d 走势</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="note">价格 = 实际最后成交价（sats/枚）。每笔 P2P 成交在 Lnfi 历史里有挂单、吃单两条记录，这里只按吃单算一次；吃单方向即买/卖方向。成交额单位 sats。钱包 = 窗口内参与成交的不同 Nostr 公钥。隐含 FDV = 总供应量 × 最新成交价。时间均为北京时间（UTC+8）。</p>
+  </section>
+</main>
+
+<main id="detail" hidden>
+  <div class="dhead">
+    <button class="back" id="back">← 返回</button>
+    <div class="dtitle"><h1 id="dName"></h1><span id="dProto" class="tag"></span></div>
+    <div class="dprice"><b id="dLast"></b><span id="dCh"></span></div>
+  </div>
+  <section class="stats" id="dStats"></section>
+  <section class="panel">
+    <div class="panel-head">
+      <h2>价格走势</h2>
+      <div class="tools"><div class="seg" id="tfSel"><button data-v="m15">15分钟</button><button data-v="h1" class="on">1小时</button><button data-v="d1">1天</button></div>
+      <div class="seg" id="ctSel"><button data-v="line" class="on">折线</button><button data-v="candle">K线</button></div></div>
+    </div>
+    <div class="chartbox"><canvas id="chart"></canvas><div id="tip" class="tip" hidden></div></div>
+  </section>
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-head"><h2>最近成交</h2><span class="hint" id="trHint"></span></div>
+      <div class="list" id="trades"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>挂单簿</h2><span class="hint" id="bookHint"></span></div>
+      <div class="book" id="book"></div>
+    </section>
+  </div>
+  <section class="panel">
+    <div class="panel-head"><h2>持有人 Top 20</h2><span class="hint" id="hoHint"></span></div>
+    <div class="list" id="holders"></div>
+    <p class="note">持有人余额来自 Lnfi 自有账本。“未在市场成交过”表示该地址在最近 60 天的成交记录中没有买卖（多为发行方/金库/分发地址，也可能只是 60 天前交易过）。</p>
+  </section>
+</main>
+
+<footer class="foot">数据由你的浏览器直接从 Lnfi 公开市场接口（api.lnfi.network）读取：只加载最近 60 天成交并缓存在本机浏览器，之后每 60 秒补新成交、3 分钟刷新挂单、15 分钟刷新持有人（仅在页面打开时）。BTC 价格来自 mempool.space。与 Lnfi 无关联，非投资建议。</footer>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
