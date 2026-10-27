@@ -31,16 +31,27 @@ function compact(n) {
   if (a >= 1e4) return (n / 1e4).toFixed(a >= 1e6 ? 0 : 1) + '万';
   return num(n);
 }
-function price(p) { // sats/枚
+function usdP(p) { // 单价 USDT，约 4 位有效数字
+  if (p == null || !isFinite(p) || !btcUsd) return '—';
+  const u = p * btcUsd / 1e8; if (u === 0) return '$0';
+  const d = Math.max(0, Math.min(12, 3 - Math.floor(Math.log10(Math.abs(u)))));
+  return '$' + Number(u.toFixed(d)).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: 0 });
+}
+function price(p) { // sats/枚：上 sats（粗），下 USDT（小灰）
   if (p == null) return '—';
-  if (unit === 'usd' && btcUsd) { const u = p * btcUsd / 1e8; return '$' + num(u, u >= 1 ? 2 : u >= 0.01 ? 4 : 8); }
-  return num(p) + ' <small class="mut">sats</small>';
+  return `<span class="dp"><b>${num(p)} <small>sats</small></b><em>${usdP(p)}</em></span>`;
 }
 function sats(v) { // 金额（sats）
   if (v == null) return '—';
   if (unit === 'usd' && btcUsd) { const u = v * btcUsd / 1e8; return '$' + compact(u); }
   if (v >= 1e8) return num(v / 1e8, 3) + ' <small class="mut">BTC</small>';
   return compact(v);
+}
+function usdt(v) { // sats 市值 → USDT（按 BTC/USD 价，USD 视同 USDT），不受 sats/USD 切换影响
+  if (v == null || !isFinite(v) || !btcUsd) return '—';
+  const u = v * btcUsd / 1e8;
+  if (Math.abs(u) >= 1e6) return (u / 1e6).toFixed(2) + 'M <small class="mut">USDT</small>';
+  return u.toLocaleString('en-US', { maximumFractionDigits: u >= 100 ? 0 : 2 }) + ' <small class="mut">USDT</small>';
 }
 function fdvTxt(v) { if (v == null) return '—'; const btc = v / 1e8; return unit === 'usd' && btcUsd ? '$' + compact(btc * btcUsd) : num(btc, btc >= 10 ? 1 : 3) + ' <small class="mut">BTC</small>'; }
 function pct(x, cls = true) {
@@ -141,7 +152,7 @@ function renderHoldings() {
     <div class="hs">${fmtBtc(v)} · ${fmtUsd(v)}</div></div>`; };
   const tot = HOLDINGS.list.reduce((a, h) => a + h.qty, 0);
   el.innerHTML = `<div class="hc hp"><div class="hn"><b>${esc(HOLDINGS.token)} 现价</b><span>${mk && mk.backfilled && mk.ch24 != null ? '24h ' + pct(mk.ch24) : ''}</span></div>
-    <div class="hv">${px == null ? '<span class="mut">读取中…</span>' : num(px) + ' <small>sats</small>'}</div>
+    <div class="hv">${px == null ? '<span class="mut">读取中…</span>' : price(px)}</div>
     <div class="hs">${mk && mk.lastAt ? '成交于 ' + fDT.format(new Date(mk.lastAt)) : ''}${bu ? ' · BTC $' + num(bu, 0) : ''}</div></div>`
     + HOLDINGS.list.map(h => cell(h.name, h.qty)).join('') + (HOLDINGS.list.length > 1 ? cell('合计', tot, 'ht') : '');
 }
@@ -163,21 +174,21 @@ function renderDetail() {
     stat('钱包（24h / 30d）', `${s.v24.wallets} / ${s.v30.wallets}`, '参与成交的 Nostr 公钥'),
     stat('持有人', s.holders != null ? num(s.holders) : '—', D.holdersAt ? '更新 ' + ago(D.holdersAt) : ''),
     stat('隐含 FDV', fdvTxt(s.fdv), `供应 ${compact(s.supply)} × 最新价`),
-    stat('买一 / 卖一', `${s.bestBid != null ? num(s.bestBid) : '—'} / ${s.bestAsk != null ? num(s.bestAsk) : '—'}`, s.bestBid && s.bestAsk ? '价差 ' + ((s.bestAsk / s.bestBid - 1) * 100).toFixed(1) + '%' : ''),
-    stat('Lnfi 报价', s.quote != null ? num(s.quote) + ' sats' : '—', 'Lnfi 列表价（参考）'),
+    stat('买一 / 卖一', `${s.bestBid != null ? num(s.bestBid) : '—'} / ${s.bestAsk != null ? num(s.bestAsk) : '—'}`, (s.bestBid != null || s.bestAsk != null ? `${usdP(s.bestBid)} / ${usdP(s.bestAsk)} · ` : '') + (s.bestBid && s.bestAsk ? '价差 ' + ((s.bestAsk / s.bestBid - 1) * 100).toFixed(1) + '%' : '')),
+    stat('Lnfi 报价', s.quote != null ? num(s.quote) + ' sats' : '—', (s.quote != null ? usdP(s.quote) + ' · ' : '') + 'Lnfi 列表价（参考）'),
     stat('最后成交', s.lastAt ? ago(s.lastAt) : '—', s.lastAt ? fDT.format(new Date(s.lastAt)) : ''),
   ].join('');
   // 成交
   $('#trHint').textContent = D.tradesAt ? '刷新 ' + fT.format(new Date(D.tradesAt)) : '';
   $('#trades').innerHTML = `<div class="row h"><span>时间</span><span>方向</span><span>价格</span><span>数量</span><span>金额 sats</span></div>` +
-    (D.trades.length ? D.trades.map(t => `<div class="row" title="吃单 ${esc(npub(t.taker))}${t.maker ? '\n挂单 ' + esc(npub(t.maker)) : ''}"><span>${fDT.format(new Date(t.t))}</span><span class="${t.side === 'buy' ? 'up' : 'dn'}">${t.side === 'buy' ? '买入' : '卖出'}</span><span>${num(t.p)}</span><span>${compact(t.v)}</span><span>${compact(t.s)}</span></div>`).join('') : '<div class="loading">暂无成交</div>');
+    (D.trades.length ? D.trades.map(t => `<div class="row" title="吃单 ${esc(npub(t.taker))}${t.maker ? '\n挂单 ' + esc(npub(t.maker)) : ''}"><span>${fDT.format(new Date(t.t))}</span><span class="${t.side === 'buy' ? 'up' : 'dn'}">${t.side === 'buy' ? '买入' : '卖出'}</span><span>${price(t.p)}</span><span>${compact(t.v)}</span><span>${compact(t.s)}</span></div>`).join('') : '<div class="loading">暂无成交</div>');
   // 挂单簿
   const b = D.book;
   $('#bookHint').textContent = b ? `${b.orders} 张挂单 · ${D.bookAt ? fT.format(new Date(D.bookAt)) : ''}` : '加载中';
   if (b) {
     const asks = b.asks.slice(0, 40), bids = b.bids.slice(0, 40);
     const mx = Math.max(1, ...asks.map(a => a.vol * a.price), ...bids.map(a => a.vol * a.price));
-    const r = (x, c) => `<div class="brow ${c}"><i style="width:${(x.vol * x.price / mx * 100).toFixed(1)}%"></i><span class="${c === 'ask' ? 'dn' : 'up'}">${num(x.price)}</span><span>${compact(x.vol)}</span><span class="mut">${x.n}</span></div>`;
+    const r = (x, c) => `<div class="brow ${c}"><i style="width:${(x.vol * x.price / mx * 100).toFixed(1)}%"></i><span class="${c === 'ask' ? 'dn' : 'up'}">${price(x.price)}</span><span>${compact(x.vol)}</span><span class="mut">${x.n}</span></div>`;
     const hd = `<div class="brow h"><span>价格</span><span>数量</span><span>单数</span></div>`;
     const sp = b.asks[0] && b.bids[0] ? `买一 ${num(b.bids[0].price)} · 卖一 ${num(b.asks[0].price)} · 价差 ${((b.asks[0].price / b.bids[0].price - 1) * 100).toFixed(2)}%` : '';
     $('#book').innerHTML = `<div class="spread">${sp || '单边挂单'}</div><div class="side"><div class="mut" style="font-size:12px;margin-bottom:2px">买单（出价）</div>${hd}${bids.map(x => r(x, 'bid')).join('') || '<div class="loading">无</div>'}</div><div class="side"><div class="mut" style="font-size:12px;margin-bottom:2px">卖单（要价）</div>${hd}${asks.map(x => r(x, 'ask')).join('') || '<div class="loading">无</div>'}</div>`;
@@ -185,7 +196,7 @@ function renderDetail() {
   // 持有人
   const h = D.holders;
   $('#hoHint').textContent = h ? `共 ${num(h.count)} 个地址 · ${D.holdersAt ? fT.format(new Date(D.holdersAt)) : ''}` : '';
-  $('#holders').innerHTML = h ? `<div class="row h hrow"><span>#</span><span>地址</span><span>余额</span><span>占比</span><span>市值 (最新价)</span></div>` + h.top.map((x, i) => `<div class="row hrow"><span class="mut">${i + 1}</span><span title="${esc(npub(x.owner))}">${esc(shortKey(x.owner))}${x.traded ? '' : ' <small class="mut">未在市场成交过</small>'}</span><span>${compact(x.bal)}</span><span>${(x.share * 100).toFixed(2)}%</span><span>${s.last ? sats(x.bal * s.last) : '—'}</span></div>`).join('') : '<div class="loading">加载中…</div>';
+  $('#holders').innerHTML = h ? `<div class="row h hrow"><span>#</span><span>地址</span><span>余额</span><span>占比</span><span>市值 (USDT)</span></div>` + h.top.map((x, i) => `<div class="row hrow"><span class="mut">${i + 1}</span><span title="${esc(npub(x.owner))}">${esc(shortKey(x.owner))}${x.traded ? '' : ' <small class="mut">未在市场成交过</small>'}</span><span>${compact(x.bal)}</span><span>${(x.share * 100).toFixed(2)}%</span><span>${usdt(x.bal * s.last)}</span></div>`).join('') : '<div class="loading">加载中…</div>';
   drawChart();
 }
 async function loadDetail() {
@@ -245,7 +256,7 @@ function drawChart() {
     const r = data[hover], x = X(hover);
     g.strokeStyle = '#ffffff33'; g.beginPath(); g.moveTo(x, padT); g.lineTo(x, H - padB); g.stroke();
     const tip = $('#tip'); tip.hidden = false;
-    tip.innerHTML = `${tf === 'd1' ? fD.format(new Date(r[0])) : fDT.format(new Date(r[0]))}<br>开 ${num(r[1])} 高 ${num(r[2])}<br>低 ${num(r[3])} 收 ${num(r[4])}<br>成交 ${compact(r[5])} sats · ${r[6]} 笔`;
+    tip.innerHTML = `${tf === 'd1' ? fD.format(new Date(r[0])) : fDT.format(new Date(r[0]))}<br>开 ${num(r[1])} 高 ${num(r[2])}<br>低 ${num(r[3])} 收 <b>${num(r[4])} sats</b><br><span class="mut">USDT 收 ${usdP(r[4])} · 高 ${usdP(r[2])} · 低 ${usdP(r[3])}</span><br>成交 ${compact(r[5])} sats · ${r[6]} 笔`;
     tip.style.left = Math.min(W - tip.offsetWidth - 4, x + 12) + 'px'; tip.style.top = '8px';
   } else $('#tip').hidden = true;
   cv._map = { padL, cw, n };

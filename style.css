@@ -76,3 +76,11 @@ a.addr{color:var(--blue);text-decoration:none}
 .hc.ht{border-color:rgba(247,178,59,.55);background:linear-gradient(180deg,rgba(247,178,59,.10),var(--bg2))}
 @media (max-width:640px){.top{padding:8px 10px;gap:6px}.brand .sub{display:none}.hold{grid-template-columns:1fr 1fr;gap:6px}.hc{padding:5px 9px}.hc .hv{font-size:15px}.hc .hs{font-size:11px}}
 @media (max-width:640px){.top{flex-wrap:wrap}.brand{flex:0 0 auto}.meta{flex:1 1 0;min-width:0;flex-wrap:nowrap;justify-content:flex-end}#btc{display:none}#status{min-width:0;max-width:100%;overflow:hidden}#status>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+/* 双价格：sats 粗体在上，USDT 小灰在下 */
+.dp{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1.2;vertical-align:middle}
+.dp b{font-weight:700;white-space:nowrap}.dp b small{font-weight:500;color:var(--mut);font-size:.78em}
+.dp em{font-style:normal;font-size:11px;font-weight:400;color:var(--mut);white-space:nowrap}
+.card .px .dp,.hc .hv .dp{align-items:flex-start}.card .px .dp em{font-size:12px}.hc .hv .dp b{color:var(--tx)}
+.dprice b .dp b,.dprice .dp b{font-size:26px}.dprice .dp em{font-size:13px}
+.up .dp b{color:var(--up)}.dn .dp b{color:var(--dn)}
+@media (max-width:640px){.dprice .dp{align-items:flex-start}.dprice .dp b{font-size:22px}}
